@@ -32,6 +32,15 @@ app.use(cors());
 
 // Parse JSON bodies
 app.use(express.json());
+const path = require("path");
+
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, "client/build")));
+
+// Handle GET requests to any route that isn't handled above
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "client/build", "index.html"));
+});
 
 const io = new Server(server, {
   cors: {
