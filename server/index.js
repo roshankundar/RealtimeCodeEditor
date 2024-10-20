@@ -5,9 +5,9 @@ const { Server } = require("socket.io");
 const ACTIONS = require("./Actions");
 const cors = require("cors");
 const axios = require("axios");
-const server = http.createServer(app);
 require("dotenv").config();
 
+const server = http.createServer(app);
 const languageConfig = {
   python3: { versionIndex: "3" },
   java: { versionIndex: "3" },
@@ -41,6 +41,7 @@ const io = new Server(server, {
 });
 
 const userSocketMap = {};
+
 const getAllConnectedClients = (roomId) => {
   return Array.from(io.sockets.adapter.rooms.get(roomId) || []).map(
     (socketId) => {
@@ -53,12 +54,10 @@ const getAllConnectedClients = (roomId) => {
 };
 
 io.on("connection", (socket) => {
-  // console.log('Socket connected', socket.id);
   socket.on(ACTIONS.JOIN, ({ roomId, username }) => {
     userSocketMap[socket.id] = username;
     socket.join(roomId);
     const clients = getAllConnectedClients(roomId);
-    // notify that new user join
     clients.forEach(({ socketId }) => {
       io.to(socketId).emit(ACTIONS.JOINED, {
         clients,
@@ -68,19 +67,16 @@ io.on("connection", (socket) => {
     });
   });
 
-  // sync the code
   socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code }) => {
     socket.in(roomId).emit(ACTIONS.CODE_CHANGE, { code });
   });
-  // when new user join the room all the code which are there are also shows on that persons editor
+
   socket.on(ACTIONS.SYNC_CODE, ({ socketId, code }) => {
     io.to(socketId).emit(ACTIONS.CODE_CHANGE, { code });
   });
 
-  // leave room
   socket.on("disconnecting", () => {
     const rooms = [...socket.rooms];
-    // leave all the room
     rooms.forEach((roomId) => {
       socket.in(roomId).emit(ACTIONS.DISCONNECTED, {
         socketId: socket.id,
@@ -96,21 +92,40 @@ io.on("connection", (socket) => {
 app.post("/compile", async (req, res) => {
   const { code, language } = req.body;
 
+  // Validate the language
+  if (!languageConfig[language]) {
+    return res.status(400).json({ error: "Invalid language" });
+  }
+
   try {
+    // Debugging output
+    console.log("Compiling code...");
+    console.log("Code:", code);
+    console.log("Language:", language);
+
     const response = await axios.post("https://api.jdoodle.com/v1/execute", {
       script: code,
       language: language,
       versionIndex: languageConfig[language].versionIndex,
       clientId: process.env.jDoodle_clientId,
-      clientSecret: process.env.kDoodle_clientSecret,
+      clientSecret: process.env.jDoodle_clientSecret,
     });
 
+    console.log("JDoodle Response:", response.data);
     res.json(response.data);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to compile code" });
+    console.error("Error compiling code:", error.message);
+
+    // Check if error response exists
+    if (error.response) {
+      res.status(error.response.status).json({
+        error: error.response.data.message || "Failed to compile code",
+      });
+    } else {
+      res.status(500).json({ error: "Failed to compile code" });
+    }
   }
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server is runnint on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
