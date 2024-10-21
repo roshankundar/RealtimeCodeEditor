@@ -14,7 +14,9 @@ app.use(cors());
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, '../client/build')));
-
+app.use((req,res,next)=>{
+  res.sendFile(path.join(__dirname,'../client/build','index.html'));
+});
 // Parse JSON bodies
 app.use(express.json());
 
