@@ -29,8 +29,6 @@ const languageConfig = {
 
 // Enable CORS
 app.use(cors());
-
-// Parse JSON bodies
 app.use(express.json());
 
 const io = new Server(server, {
@@ -53,12 +51,10 @@ const getAllConnectedClients = (roomId) => {
 };
 
 io.on("connection", (socket) => {
-  // console.log('Socket connected', socket.id);
   socket.on(ACTIONS.JOIN, ({ roomId, username }) => {
     userSocketMap[socket.id] = username;
     socket.join(roomId);
     const clients = getAllConnectedClients(roomId);
-    // notify that new user join
     clients.forEach(({ socketId }) => {
       io.to(socketId).emit(ACTIONS.JOINED, {
         clients,
@@ -68,19 +64,16 @@ io.on("connection", (socket) => {
     });
   });
 
-  // sync the code
   socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code }) => {
     socket.in(roomId).emit(ACTIONS.CODE_CHANGE, { code });
   });
-  // when new user join the room all the code which are there are also shows on that persons editor
+
   socket.on(ACTIONS.SYNC_CODE, ({ socketId, code }) => {
     io.to(socketId).emit(ACTIONS.CODE_CHANGE, { code });
   });
 
-  // leave room
   socket.on("disconnecting", () => {
     const rooms = [...socket.rooms];
-    // leave all the room
     rooms.forEach((roomId) => {
       socket.in(roomId).emit(ACTIONS.DISCONNECTED, {
         socketId: socket.id,
@@ -107,10 +100,15 @@ app.post("/compile", async (req, res) => {
 
     res.json(response.data);
   } catch (error) {
-    console.error(error);
+    console.error("Error compiling code:", error.message); // Log specific error message
     res.status(500).json({ error: "Failed to compile code" });
   }
 });
 
+// Test endpoint
+app.get("/test", (req, res) => {
+  res.send("Server is running!");
+});
+
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server is runnint on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
