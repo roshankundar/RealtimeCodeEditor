@@ -5,9 +5,9 @@ const { Server } = require("socket.io");
 const ACTIONS = require("./Actions");
 const cors = require("cors");
 const axios = require("axios");
-const server = http.createServer(app);
 require("dotenv").config();
 
+const server = http.createServer(app);
 const languageConfig = {
   python3: { versionIndex: "3" },
   java: { versionIndex: "3" },
@@ -30,6 +30,15 @@ const languageConfig = {
 // Enable CORS
 app.use(cors());
 app.use(express.json());
+const path = require("path");
+
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, "client/build")));
+
+// Handle GET requests to any route that isn't handled above
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "client/build", "index.html"));
+});
 
 const io = new Server(server, {
   cors: {
@@ -39,6 +48,7 @@ const io = new Server(server, {
 });
 
 const userSocketMap = {};
+
 const getAllConnectedClients = (roomId) => {
   return Array.from(io.sockets.adapter.rooms.get(roomId) || []).map(
     (socketId) => {
@@ -89,18 +99,29 @@ io.on("connection", (socket) => {
 app.post("/compile", async (req, res) => {
   const { code, language } = req.body;
 
+  // Validate the language
+  if (!languageConfig[language]) {
+    return res.status(400).json({ error: "Invalid language" });
+  }
+
   try {
+    // Debugging output
+    console.log("Compiling code...");
+    console.log("Code:", code);
+    console.log("Language:", language);
+
     const response = await axios.post("https://api.jdoodle.com/v1/execute", {
       script: code,
       language: language,
       versionIndex: languageConfig[language].versionIndex,
       clientId: process.env.jDoodle_clientId,
-      clientSecret: process.env.kDoodle_clientSecret,
+      clientSecret: process.env.jDoodle_clientSecret,
     });
 
+    console.log("JDoodle Response:", response.data);
     res.json(response.data);
   } catch (error) {
-    console.error("Error compiling code:", error.message); // Log specific error message
+    console.error(error);
     res.status(500).json({ error: "Failed to compile code" });
   }
 });

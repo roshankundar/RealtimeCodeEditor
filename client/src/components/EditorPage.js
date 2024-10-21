@@ -138,15 +138,26 @@ function EditorPage() {
         {/* Client panel */}
         <div className="col-md-2 bg-dark text-light d-flex flex-column">
           <img
-            src="/images/codecast.png"
+            src="/images/tricodetallyimg.png"
             alt="Logo"
             className="img-fluid mx-auto"
-            style={{ maxWidth: "150px", marginTop: "-43px" }}
+            style={{
+              maxWidth: "150px",   // Limit the width
+              maxHeight: "80px",   // Limit the height
+              marginTop: "20px",   // Move the logo down a little
+              marginBottom: "10px",// Adjust spacing below the logo
+              objectFit: "contain",// Maintain aspect ratio
+            }}
           />
-          <hr style={{ marginTop: "-3rem" }} />
+          <hr style={{ marginTop: "0.5rem", marginBottom: "1rem" }} />
 
           {/* Client list container */}
-          <div className="d-flex flex-column flex-grow-1 overflow-auto">
+          <div
+            className="d-flex flex-column flex-grow-1 overflow-auto"
+            style={{
+              marginTop: "20px",  // Move the "Members" section downwards
+            }}
+          >
             <span className="mb-2">Members</span>
             {clients.map((client) => (
               <Client key={client.socketId} username={client.username} />
@@ -154,6 +165,7 @@ function EditorPage() {
           </div>
 
           <hr />
+
           {/* Buttons */}
           <div className="mt-auto mb-3">
             <button className="btn btn-success w-100 mb-2" onClick={copyRoomId}>
