@@ -29,6 +29,8 @@ const languageConfig = {
 
 // Enable CORS
 app.use(cors());
+
+// Parse JSON bodies
 app.use(express.json());
 const path = require("path");
 
@@ -121,14 +123,17 @@ app.post("/compile", async (req, res) => {
     console.log("JDoodle Response:", response.data);
     res.json(response.data);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to compile code" });
-  }
-});
+    console.error("Error compiling code:", error.message);
 
-// Test endpoint
-app.get("/test", (req, res) => {
-  res.send("Server is running!");
+    // Check if error response exists
+    if (error.response) {
+      res.status(error.response.status).json({
+        error: error.response.data.message || "Failed to compile code",
+      });
+    } else {
+      res.status(500).json({ error: "Failed to compile code" });
+    }
+  }
 });
 
 const PORT = process.env.PORT || 5000;
