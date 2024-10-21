@@ -1,5 +1,5 @@
 const express = require("express");
-const app = express();
+const path = require("path");
 const http = require("http");
 const { Server } = require("socket.io");
 const ACTIONS = require("./Actions");
@@ -7,7 +7,19 @@ const cors = require("cors");
 const axios = require("axios");
 require("dotenv").config();
 
+const app = express();
+
+// Enable CORS
+app.use(cors());
+
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '../client/build')));
+
+// Parse JSON bodies
+app.use(express.json());
+
 const server = http.createServer(app);
+
 const languageConfig = {
   python3: { versionIndex: "3" },
   java: { versionIndex: "3" },
@@ -27,21 +39,12 @@ const languageConfig = {
   r: { versionIndex: "3" },
 };
 
-// Enable CORS
-app.use(cors());
-
-// Parse JSON bodies
-app.use(express.json());
-const path = require("path");
-
-// Serve static files from the React app
-app.use(express.static(path.join(__dirname, "client/build")));
-
 // Handle GET requests to any route that isn't handled above
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "client/build", "index.html"));
+  res.sendFile(path.join(__dirname, "../client/build", "index.html"));
 });
 
+// Initialize Socket.io
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:3000",
